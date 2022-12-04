@@ -1,0 +1,2 @@
+QML_IMPORT_NAME = "flow.nodes"
+QML_IMPORT_MAJOR_VERSION = 1
