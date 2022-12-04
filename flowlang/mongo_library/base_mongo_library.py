@@ -1,9 +1,8 @@
 from ..core import ExecutableNode, VarParam, Variable
 from ..library import register_type
 
-
+import logging
 from pymongo import MongoClient
-from bson import ObjectId
 
 
 @register_type

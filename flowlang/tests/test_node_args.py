@@ -26,6 +26,7 @@ class TestArguments(unittest.TestCase):
         flow = Flow()
 
         node = GetInputArgument()
+        node.get_input_value('name').default_value = 'arg'
         node.get_input_value('name').set_value('arg')
 
         flow.add_node(node)

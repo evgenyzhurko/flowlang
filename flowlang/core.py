@@ -1,8 +1,9 @@
 import uuid
-import json
 import logging
+from bson import json_util
 
 import sys
+import copy
 import subprocess
 
 from .library import Library
@@ -22,7 +23,7 @@ class Variable:
     def __init__(self, dtype, default_value):
         assert(dtype is not None)
         self.dtype = dtype
-        self.value = default_value
+        self.value = copy.deepcopy(default_value)
         self.default_value = default_value
 
     def get_type(self):
@@ -35,7 +36,7 @@ class Variable:
         return self.value
 
     def reset(self):
-        self.value = self.default_value
+        self.value = copy.deepcopy(self.default_value)
 
 
 class VarParam:
@@ -140,13 +141,15 @@ class Node:
             if key in data['input_params']:
                 node_value = data['input_params'][key]
                 self.input_params[key].default_value = self.input_params[key].dtype(node_value)
-                self.input_values[key].set_value(self.input_params[key].default_value)
+                self.input_values[key].default_value = self.output_params[key].default_value
+                self.input_values[key].value = copy.deepcopy(self.input_params[key].default_value)
 
         for key, _ in self.output_params.items():
             if key in data['output_params']:
                 node_value = data['output_params'][key]
                 self.output_params[key].default_value = self.output_params[key].dtype(node_value)
-                self.output_values[key].set_value(self.output_params[key].default_value)
+                self.output_values[key].default_value = self.output_params[key].default_value
+                self.output_values[key].value = copy.deepcopy(self.output_params[key].default_value)
 
 
 class ExecutableNode(Node):
@@ -231,10 +234,10 @@ class Flow(Node):
         if self.start_node is not Node:
             data['start'] = str(self.start_node.uuid)
 
-        return json.dumps(data)
+        return json_util.dumps(data)
 
     def from_dict(self, data):
-        data = json.loads(data)
+        data = json_util.loads(data)
         resolve_dependencies(data['dependencies'])
 
         for node in data['nodes']:
@@ -266,10 +269,10 @@ class Flow(Node):
             self.start_node = self.get_node(uuid.UUID(data['start']))
 
     def to_json(self):
-        return json.dumps(self.to_dict())
+        return json_util.dumps(self.to_dict())
 
     def from_json(self, text):
-        self.from_dict(json.loads(text))
+        self.from_dict(json_util.loads(text))
 
     def add_node(self, node: Node):
         self.nodes.append(node)
@@ -295,6 +298,18 @@ class Flow(Node):
     def set_start(self, node: Node):
         self.start_node = node
 
+    def _reset_variables(self):
+        for node in self.nodes:
+            for name, var in node.output_values.items():
+                if not node.output_params[name].callable:
+                    var.value = copy.deepcopy(var.default_value)
+            
+            for name, var in node.input_values.items():
+                if not node.input_params[name].callable:
+                    var.value = copy.deepcopy(var.default_value)
+
     def _execute(self, **kwargs):
+        self._reset_variables()
+
         if self.start_node is not None:
             self.start_node(**kwargs)

@@ -88,6 +88,7 @@ class OutputPinListVM(QAbstractListModel):
         param_value = list(self.node.output_values.items())[index.row()]
         if role == OutputPinListVM.PIN_VALUE_ROLE:
             param[1].default_value = param[1].dtype(value)
+            param_value[1].default_value = param[1].dtype(value)
             param_value[1].set_value(param[1].default_value)
         
         return super().setData(index, value, role)
