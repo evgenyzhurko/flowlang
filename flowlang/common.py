@@ -50,11 +50,13 @@ class ForNode(ExecutableNode):
         for i in range(start, end, step):
             self.output_values['index'].set_value(i)
             if iteration_exec is not None:
-                iteration_exec(**kwargs)
+                result = iteration_exec(**kwargs)
+                if result is not None:
+                    return result
         
         finally_exec = self.output_values['finally'].get_value()
         if finally_exec is not None:
-            finally_exec(**kwargs)
+            return finally_exec(**kwargs)
 
 
 @register_type
@@ -75,9 +77,9 @@ class IfElseNode(Node):
         false_exec = self.output_values['false'].get_value()
         value = self.input_values['value'].get_value()
         if value:
-            true_exec(**kwargs) if true_exec is not None else None
+            return true_exec(**kwargs) if true_exec is not None else None
         else:
-            false_exec(**kwargs) if false_exec is not None else None
+            return false_exec(**kwargs) if false_exec is not None else None
 
 @register_type
 class SetVariableValue(ExecutableNode):
@@ -104,3 +106,14 @@ class GetInputArgument(ExecutableNode):
     def _execute(self, **kwargs):
         arg_name = self.get_input_value('name').get_value()
         self.get_output_value('object').set_value(kwargs[arg_name] if arg_name in kwargs else None)
+
+
+@register_type
+class ReturnNode(ExecutableNode):
+    def __init__(self):
+        super().__init__(
+            input_params={ 'object': VarParam('object', object, None) }
+        )
+
+    def _execute(self, **kwargs):
+        return self.input_values['object'].get_value()

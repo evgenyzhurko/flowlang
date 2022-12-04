@@ -107,8 +107,9 @@ class Node:
             self.input_params[name].default_value)
 
     def __call__(self, **kwargs):
-        self._execute(**kwargs)
+        result = self._execute(**kwargs)
         logging.debug(f'{self.get_class_name()} executed')
+        return result
 
     def to_dict(self):
         data = {}
@@ -162,11 +163,13 @@ class ExecutableNode(Node):
         super().__init__(input_params_with_exec, output_params_with_exec)
 
     def __call__(self, **kwargs):
-        super().__call__(**kwargs)
+        result = super().__call__(**kwargs)
+        if result is not None:
+            return result
         
         next_node = self.output_values['exec'].get_value()
         if next_node is not None:
-            next_node(**kwargs)
+            return next_node(**kwargs)
 
 
 class Link():
@@ -312,4 +315,4 @@ class Flow(Node):
         self._reset_variables()
 
         if self.start_node is not None:
-            self.start_node(**kwargs)
+            return self.start_node(**kwargs)
