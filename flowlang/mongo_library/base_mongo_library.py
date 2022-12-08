@@ -181,3 +181,31 @@ class FindDocuments2(ExecutableNode):
         limit = self.get_input_value('limit').get_value()
         result = list(collection.find(params).skip(skip).limit(limit))
         self.get_output_value('objects').set_value(result)
+
+
+@register_type
+class DocumentUpdateField(ExecutableNode):
+    def __init__(self):
+        super().__init__(
+            input_params =
+            {
+                'collection': VarParam('collection', object, None),
+                'document': VarParam('document', object, None),
+                'name': VarParam('name', str, ''),
+                'value': VarParam('value', object, None)
+            })
+
+    def _execute(self, **kwargs):
+        collection = self.get_input_value('collection').get_value()
+        document = self.get_input_value('document').get_value()
+        name = self.get_input_value('name').get_value()
+        value = self.get_input_value('value').get_value()
+
+        collection.update_one(
+            { "_id": document['_id'] },
+            {
+                "$set": {
+                    name: value
+                }
+            }
+        )
